@@ -1,510 +1,786 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2048</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>合成NJU</title>
   <style>
     * {
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
+
     body {
+      margin: 0;
+      min-height: 100vh;
       background: #faf8ef;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      font-family: 'Arial', 'Microsoft YaHei', sans-serif;
-      margin: 0;
-      padding: 16px;
+      font-family: 'Arial', 'Helvetica Neue', sans-serif;
     }
-    .game-container {
-      width: 100%;
+
+    .game-wrapper {
       max-width: 500px;
-      background: #bbada0;
-      border-radius: 24px;
-      padding: 24px 24px 32px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s;
+      width: 100%;
+      padding: 20px 15px 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
+
     .header {
+      width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      color: #776e65;
+      margin-bottom: 18px;
+      padding: 0 5px;
     }
+
     .title {
-      font-size: 48px;
-      font-weight: 900;
-      line-height: 1;
+      font-size: 2.2rem;
+      font-weight: 800;
       color: #776e65;
-      letter-spacing: -2px;
+      letter-spacing: 1px;
+      line-height: 1;
     }
-    .score-box {
-      background: #cdc1b4;
-      padding: 6px 18px;
-      border-radius: 40px;
-      color: #f9f6f2;
+
+    .title span {
+      display: inline-block;
+      background: #776e65;
+      color: #faf8ef;
+      font-size: 0.8rem;
       font-weight: 700;
-      font-size: 20px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .score-box {
+      background: #bbada0;
+      padding: 8px 18px;
+      border-radius: 8px;
+      text-align: center;
+      color: white;
+    }
+
+    .score-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+    }
+
+    .score-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .control-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 0 5px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .target-badge {
+      background: #edc53f;
+      color: #776e65;
+      font-weight: 700;
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-size: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #8f7a66;
+      border: none;
+      color: #f9f6f2;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: 0.5px;
+      box-shadow: 0 3px 0 #6b5a4a;
+      min-width: 64px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+      justify-content: center;
+      gap: 4px;
     }
-    .score-box span {
-      background: #776e65;
-      padding: 0 12px;
-      border-radius: 30px;
-      line-height: 30px;
-      color: #f9f6f2;
-      font-size: 22px;
-      min-width: 50px;
-      text-align: center;
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #6b5a4a;
     }
-    .grid {
+
+    .btn:hover {
+      background: #9f8b76;
+    }
+
+    .btn-undo {
+      background: #6d8a7d;
+      box-shadow: 0 3px 0 #4d6a5d;
+    }
+
+    .btn-undo:hover {
+      background: #7f9c8d;
+    }
+
+    .btn-undo:disabled {
+      opacity: 0.4;
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #4d6a5d;
+      pointer-events: none;
+    }
+
+    .grid-container {
+      background: #bbada0;
+      border-radius: 12px;
+      padding: 12px;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      background: #bbada0;
-      border-radius: 18px;
-      padding: 12px;
+      width: 100%;
       aspect-ratio: 1 / 1;
-      margin-bottom: 20px;
-      touch-action: none;  /* 防止触摸滚动 */
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      touch-action: none;
+      user-select: none;
     }
+
     .cell {
       background: rgba(238, 228, 218, 0.35);
-      border-radius: 12px;
+      border-radius: 8px;
       display: flex;
-      justify-content: center;
       align-items: center;
-      font-size: 36px;
-      font-weight: 800;
-      color: #776e65;
-      transition: background 0.12s, transform 0.10s;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+      justify-content: center;
+      font-size: 2.3rem;
+      font-weight: 700;
+      transition: background 0.1s, transform 0.12s, box-shadow 0.1s;
       aspect-ratio: 1 / 1;
+      color: #776e65;
       will-change: transform;
     }
-    /* 数字颜色 (经典2048风格) */
-    .cell[data-value="2"] { background: #eee4da; }
-    .cell[data-value="4"] { background: #ede0c8; }
-    .cell[data-value="8"] { background: #f2b179; color: #f9f6f2; }
-    .cell[data-value="16"] { background: #f59563; color: #f9f6f2; }
-    .cell[data-value="32"] { background: #f67c5f; color: #f9f6f2; }
-    .cell[data-value="64"] { background: #f65e3b; color: #f9f6f2; }
-    .cell[data-value="128"] { background: #edcf72; color: #f9f6f2; font-size: 30px; }
-    .cell[data-value="256"] { background: #edcc61; color: #f9f6f2; font-size: 30px; }
-    .cell[data-value="512"] { background: #edc850; color: #f9f6f2; font-size: 30px; }
-    .cell[data-value="1024"] { background: #edc53f; color: #f9f6f2; font-size: 24px; }
-    .cell[data-value="2048"] { background: #edc22e; color: #f9f6f2; font-size: 24px; box-shadow: 0 0 20px 4px #ffd966; }
-    .cell[data-value="4096"] { background: #60d992; color: #f9f6f2; font-size: 22px; }
-    .cell[data-value="8192"] { background: #3c9a6e; color: #f9f6f2; font-size: 22px; }
+
+    /* 数字 (2,4,8,... 32768) */
+    .cell[data-value="2"] {
+      background-image: url('images/2.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #eee4da;
+      color: transparent;
+    }
+    .cell[data-value="4"] {
+      background-image: url('images/4.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #ede0c8;
+      color: transparent;
+    }
+    .cell[data-value="8"] {
+      background-image: url('images/8.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #f2b179;
+      color: transparent;
+    }
+    .cell[data-value="16"] {
+      background-image: url('images/16.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #f59563;
+      color: transparent;
+    }
+    .cell[data-value="32"] {
+      background-image: url('images/32.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #f67c5f;
+      color: transparent;
+    }
+    .cell[data-value="64"] {
+      background-image: url('images/64.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #f65e3b;
+      color: transparent;
+    }
+    .cell[data-value="128"] {
+      background-image: url('images/128.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #edcf72;
+      color: transparent;
+    }
+    .cell[data-value="256"] {
+      background-image: url('images/256.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #edcc61;
+      color: transparent;
+    }
+    .cell[data-value="512"] {
+      background-image: url('images/512.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #edc850;
+      color: transparent;
+    }
+    .cell[data-value="1024"] {
+      background-image: url('images/1024.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #edc53f;
+      color: transparent;
+    }
+    .cell[data-value="2048"] {
+      background-image: url('images/2048.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #edc22e;
+      color: transparent;
+    }
+    .cell[data-value="4096"] {
+      background-image: url('images/4096.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #60d992;
+      color: transparent;
+    }
+    .cell[data-value="8192"] {
+      background-image: url('images/8192.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #3c9a6e;
+      color: transparent;
+    }
+    .cell[data-value="16384"] {
+      background-image: url('images/16384.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #2d7d5a;
+      color: transparent;
+    }
+    cell[data-value="32768"] {
+      background-image: url('images/32768.jpg');
+      background-size: 80%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #1f5c3f;
+      color: transparent;
+    }
+
+
     .empty-cell {
       background: rgba(238, 228, 218, 0.35);
     }
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-top: 6px;
-    }
-    button {
-      background: #8f7a66;
-      border: none;
+
+    .game-over-msg {
+      margin-top: 25px;
+      padding: 12px 20px;
+      background: #edc53f;
       border-radius: 40px;
-      color: #f9f6f2;
       font-weight: 700;
-      font-size: 18px;
-      padding: 12px 32px;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      box-shadow: 0 4px 0 #5f4d3e;
-      letter-spacing: 0.6px;
-      flex: 1 1 auto;
-      min-width: 100px;
-    }
-    button:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #5f4d3e;
-    }
-    button:hover {
-      background: #9f8b76;
-    }
-    .status-message {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 20px;
-      font-weight: 600;
       color: #776e65;
-      min-height: 2.4em;
+      font-size: 1.1rem;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+
+    .game-over-msg.show {
+      display: flex;
+    }
+
+    .game-over-msg .btn-sm {
+      background: #776e65;
+      color: white;
+      border: none;
+      padding: 6px 18px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .status-text {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #776e65;
+      opacity: 0.7;
+      letter-spacing: 0.3px;
+    }
+
+    .undo-hint {
+      font-size: 0.75rem;
+      opacity: 0.6;
+      margin-left: 4px;
+    }
+
     @media (max-width: 480px) {
-      .game-container { padding: 16px 16px 24px; }
-      .title { font-size: 36px; }
-      .grid { gap: 8px; padding: 8px; }
-      .cell { font-size: 28px; }
-      .cell[data-value="128"], .cell[data-value="256"], .cell[data-value="512"] { font-size: 22px; }
-      .cell[data-value="1024"], .cell[data-value="2048"] { font-size: 18px; }
-      .cell[data-value="4096"], .cell[data-value="8192"] { font-size: 16px; }
+      .title { font-size: 1.8rem; }
+      .score-value { font-size: 1.4rem; }
+      .grid-container { gap: 8px; padding: 8px; }
+      .cell { font-size: 1.6rem; }
+      .cell[data-value="128"] { font-size: 1.4rem; }
+      .cell[data-value="256"] { font-size: 1.4rem; }
+      .cell[data-value="512"] { font-size: 1.3rem; }
+      .cell[data-value="1024"] { font-size: 1.1rem; }
+      .cell[data-value="2048"] { font-size: 1.1rem; }
+      .cell[data-value="4096"] { font-size: 1rem; }
+      .cell[data-value="8192"] { font-size: 0.9rem; }
+      .cell[data-value="16384"] { font-size: 0.8rem; }
+      .cell[data-value="32768"] { font-size: 0.75rem; }
+      .btn { padding: 8px 12px; font-size: 0.9rem; min-width: 54px; }
+      .target-badge { font-size: 0.8rem; padding: 4px 12px; }
+      .control-bar { gap: 6px; }
     }
   </style>
 </head>
 <body>
-<div class="game-container">
+<div class="game-wrapper">
   <div class="header">
-    <div class="title">2048</div>
-    <div class="score-box">🏆 <span id="scoreDisplay">0</span></div>
+    <div class="title">2048 <span>32768</span></div>
+    <div class="score-box">
+      <div class="score-label">得分</div>
+      <div class="score-value" id="scoreDisplay">0</div>
+    </div>
   </div>
 
-  <!-- 4x4 网格 -->
-  <div class="grid" id="gridContainer"></div>
-
-  <div class="controls">
-    <button id="newGameBtn">🔄 新游戏</button>
-    <button id="undoBtn">↩️ 撤回</button>
+  <div class="control-bar">
+    <div class="target-badge">🏆  合成南大！</div>
+    <div class="btn-group">
+      <button class="btn btn-undo" id="undoBtn" disabled>↩ 撤回</button>
+      <button class="btn" id="newGameBtn">🔄 新游戏</button>
+    </div>
   </div>
-  <div id="statusMessage" class="status-message"></div>
+
+  <div class="grid-container" id="gridContainer">
+    <!-- 4x4 网格由 js 动态生成 -->
+  </div>
+
+  <div id="gameOverMsg" class="game-over-msg">
+    <span>✨ 游戏结束！</span>
+    <button class="btn-sm" id="restartFromOverBtn">再来一局</button>
+  </div>
+  <div class="status-text">← ↑ → ↓ 或滑动 · Ctrl+Z 撤回</div>
 </div>
 
 <script>
   (function() {
     // ---------- 核心配置 ----------
     const SIZE = 4;
-    let grid = [];                // 二维数组，存储每个格子的值 (0 表示空)
+    const TARGET = 32768;
+    let grid = [];
     let score = 0;
     let gameOver = false;
-    let winFlag = false;          // 是否已出现2048 (不阻止继续游戏)
-    let history = [];            // 用于撤回: 存储 { grid, score }
+    let winFlag = false;
+
+    // ---------- 撤回系统 ----------
+    let history = [];            // 存储 { grid, score, winFlag, gameOver }
+    const MAX_HISTORY = 20;      // 限制历史长度，防止内存溢出
 
     // DOM 元素
-    const gridEl = document.getElementById('gridContainer');
+    const gridContainer = document.getElementById('gridContainer');
     const scoreDisplay = document.getElementById('scoreDisplay');
-    const statusMsg = document.getElementById('statusMessage');
+    const gameOverMsg = document.getElementById('gameOverMsg');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const restartFromOverBtn = document.getElementById('restartFromOverBtn');
+    const undoBtn = document.getElementById('undoBtn');
 
-    // ---------- 辅助函数 ----------
-    function getEmptyCells() {
-      const cells = [];
-      for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          if (grid[r][c] === 0) cells.push({ row: r, col: c });
-        }
-      }
-      return cells;
-    }
-
-    // 随机选择一个空格子生成 2 或 4 (90% 2, 10% 4)
-    function spawnTile() {
-      const empty = getEmptyCells();
-      if (empty.length === 0) return false;
-      const { row, col } = empty[Math.floor(Math.random() * empty.length)];
-      grid[row][col] = Math.random() < 0.9 ? 2 : 4;
-      return true;
-    }
-
-    // 深拷贝 grid
+    // ---------- 深拷贝网格 ----------
     function cloneGrid(g) {
       return g.map(row => [...row]);
     }
 
-    // 保存当前状态到历史 (用于撤回)
+    // ---------- 保存当前状态到历史 (用于撤回) ----------
     function pushHistory() {
+      // 如果游戏结束，不保存历史 (避免撤回导致状态错乱)
+      if (gameOver) return;
       history.push({
         grid: cloneGrid(grid),
-        score: score
+        score: score,
+        winFlag: winFlag,
+        gameOver: gameOver
       });
-      // 限制历史长度，避免内存过大 (最多30步)
-      if (history.length > 30) history.shift();
+      // 限制历史长度
+      if (history.length > MAX_HISTORY) {
+        history.shift();
+      }
+      updateUndoButton();
     }
 
-    // ---------- 核心移动逻辑 (合并与滑动) ----------
-    // 对一维数组进行滑动合并 (左->右方向)
-    function slideRow(row) {
-      // 1. 移除零 (压缩)
-      let filtered = row.filter(val => val !== 0);
-      // 2. 相邻合并
-      let merged = [];
-      let i = 0;
-      while (i < filtered.length) {
-        if (i + 1 < filtered.length && filtered[i] === filtered[i + 1]) {
-          const val = filtered[i] * 2;
-          merged.push(val);
-          score += val;           // 增加分数
-          i += 2;
-        } else {
-          merged.push(filtered[i]);
-          i++;
-        }
-      }
-      // 3. 补零至 SIZE 长度
-      while (merged.length < SIZE) {
-        merged.push(0);
-      }
-      return merged;
-    }
-
-    // 移动方向: 0:左, 1:右, 2:上, 3:下
-    function move(direction) {
-      if (gameOver) {
-        statusMsg.innerText = '😵 游戏已结束，点击"新游戏"重新开始';
-        return false;
-      }
-
-      // 保存历史 (用于撤回)
-      pushHistory();
-
-      const oldGrid = cloneGrid(grid);
-      let moved = false;
-
-      // 根据方向处理
-      if (direction === 0) { // 左
-        for (let r = 0; r < SIZE; r++) {
-          const newRow = slideRow(grid[r]);
-          if (!moved && !arraysEqual(grid[r], newRow)) moved = true;
-          grid[r] = newRow;
-        }
-      } else if (direction === 1) { // 右
-        for (let r = 0; r < SIZE; r++) {
-          const reversed = [...grid[r]].reverse();
-          const newRow = slideRow(reversed);
-          const finalRow = newRow.reverse();
-          if (!moved && !arraysEqual(grid[r], finalRow)) moved = true;
-          grid[r] = finalRow;
-        }
-      } else if (direction === 2) { // 上
-        for (let c = 0; c < SIZE; c++) {
-          const colVals = [];
-          for (let r = 0; r < SIZE; r++) colVals.push(grid[r][c]);
-          const newCol = slideRow(colVals);
-          for (let r = 0; r < SIZE; r++) {
-            if (grid[r][c] !== newCol[r]) moved = true;
-            grid[r][c] = newCol[r];
-          }
-        }
-      } else if (direction === 3) { // 下
-        for (let c = 0; c < SIZE; c++) {
-          const colVals = [];
-          for (let r = SIZE - 1; r >= 0; r--) colVals.push(grid[r][c]);
-          const newCol = slideRow(colVals);
-          const finalCol = newCol.reverse(); // 还原顺序
-          for (let r = 0; r < SIZE; r++) {
-            if (grid[r][c] !== finalCol[r]) moved = true;
-            grid[r][c] = finalCol[r];
-          }
-        }
-      }
-
-      // 如果发生了移动，生成新方块并检查游戏状态
-      if (moved) {
-        spawnTile();
-        updateUI();
-
-        // 检查胜利 (出现2048)
-        if (!winFlag) {
-          for (let r = 0; r < SIZE; r++) {
-            for (let c = 0; c < SIZE; c++) {
-              if (grid[r][c] === 2048) {
-                winFlag = true;
-                statusMsg.innerText = '🎉 你赢了！ 继续挑战更高分吧！';
-                break;
-              }
-            }
-            if (winFlag) break;
-          }
-        }
-
-        // 检查游戏是否结束 (无空格且无法合并)
-        if (isGameOver()) {
-          gameOver = true;
-          statusMsg.innerText = '💔 游戏结束！点击"新游戏"再来一局';
-        } else {
-          if (!winFlag) statusMsg.innerText = '▶️ 继续滑动~';
-        }
-        updateScore();
-        return true;
+    // ---------- 撤回 ----------
+    function undo() {
+      if (history.length === 0 || gameOver) return false;
+      const state = history.pop();
+      grid = state.grid;
+      score = state.score;
+      winFlag = state.winFlag;
+      gameOver = state.gameOver;   // 撤回后游戏结束状态恢复
+      // 如果游戏结束消息显示中，但撤回后游戏未结束，隐藏消息
+      if (!gameOver) {
+        gameOverMsg.classList.remove('show');
+        // 重置消息内容为默认 (防止胜利消息残留)
+        gameOverMsg.innerHTML = `<span>✨ 游戏结束！</span><button class="btn-sm" id="restartFromOverBtn">再来一局</button>`;
+        document.getElementById('restartFromOverBtn').addEventListener('click', restartGame);
       } else {
-        // 未发生移动，弹出历史 (撤回无效操作)
-        history.pop();
-        statusMsg.innerText = '⛔ 无法移动，换方向试试';
-        return false;
+        // 如果撤回后依然是游戏结束，显示消息
+        gameOverMsg.classList.add('show');
       }
-    }
-
-    // 判断两个数组是否相等 (用于检测移动)
-    function arraysEqual(a, b) {
-      if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) return false;
-      }
-      return true;
-    }
-
-    // 检查游戏是否结束 (无空格且没有相邻相同)
-    function isGameOver() {
-      // 有空位 => 未结束
-      if (getEmptyCells().length > 0) return false;
-
-      // 检查水平相邻
-      for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE - 1; c++) {
-          if (grid[r][c] === grid[r][c + 1]) return false;
-        }
-      }
-      // 检查垂直相邻
-      for (let r = 0; r < SIZE - 1; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          if (grid[r][c] === grid[r + 1][c]) return false;
-        }
-      }
-      return true;
-    }
-
-    // ---------- UI 渲染 ----------
-    function renderGrid() {
-      gridEl.innerHTML = '';
-      for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          const val = grid[r][c];
-          if (val !== 0) {
-            cell.textContent = val;
-            cell.setAttribute('data-value', val);
-          } else {
-            cell.classList.add('empty-cell');
-            cell.textContent = '';
-          }
-          gridEl.appendChild(cell);
-        }
-      }
-    }
-
-    function updateScore() {
-      scoreDisplay.textContent = score;
-    }
-
-    function updateUI() {
-      renderGrid();
       updateScore();
+      renderGrid();
+      updateUndoButton();
+      return true;
     }
 
-    // ---------- 新游戏初始化 ----------
-    function initGame() {
+    // ---------- 更新撤回按钮状态 ----------
+    function updateUndoButton() {
+      if (history.length === 0 || gameOver) {
+        undoBtn.disabled = true;
+      } else {
+        undoBtn.disabled = false;
+      }
+    }
+
+    // ---------- 初始化网格 ----------
+    function initGrid() {
       grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
       score = 0;
       gameOver = false;
       winFlag = false;
-      history = [];
-      // 初始生成两个方块
-      spawnTile();
-      spawnTile();
-      updateUI();
-      statusMsg.innerText = '✨ 滑动合并数字，向2048进发！';
+      history = [];              // 清空历史
+      gameOverMsg.classList.remove('show');
+      // 重置消息
+      gameOverMsg.innerHTML = `<span>✨ 游戏结束！</span><button class="btn-sm" id="restartFromOverBtn">再来一局</button>`;
+      document.getElementById('restartFromOverBtn').addEventListener('click', restartGame);
+      updateScore();
+      updateUndoButton();
     }
 
-    // ---------- 撤回功能 ----------
-    function undoMove() {
-      if (history.length === 0) {
-        statusMsg.innerText = '⏳ 没有可以撤回的步骤';
-        return;
-      }
-      if (gameOver) {
-        // 如果游戏结束，撤回可以复活，重置结束标记
-        gameOver = false;
-        winFlag = false;   // 重新检测胜利
-      }
-      const prev = history.pop();
-      grid = prev.grid;
-      score = prev.score;
-      // 检查是否胜利 (防止撤回后丢失胜利状态)
-      winFlag = false;
+    // ---------- 在随机空位生成 2 或 4 ----------
+    function spawnTile() {
+      const emptyPositions = [];
       for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
-          if (grid[r][c] === 2048) winFlag = true;
+          if (grid[r][c] === 0) emptyPositions.push([r, c]);
         }
       }
-      // 检查是否游戏结束
-      if (isGameOver() && getEmptyCells().length === 0) {
-        gameOver = true;
-        statusMsg.innerText = '💔 撤回后仍处于结束状态';
-      } else {
-        gameOver = false;
-        statusMsg.innerText = '↩️ 已撤回一步';
-      }
-      updateUI();
-      // 如果游戏结束且没有空位，显示结束信息
-      if (gameOver) statusMsg.innerText = '💔 游戏结束！点击"新游戏"再来一局';
+      if (emptyPositions.length === 0) return false;
+      const [row, col] = emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
+      grid[row][col] = Math.random() < 0.9 ? 2 : 4;
+      return true;
     }
 
-    // ---------- 键盘控制 ----------
-    function onKeyDown(e) {
+    // ---------- 检查是否还有空位或可合并 ----------
+    function hasAvailableMoves() {
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === 0) return true;
+        }
+      }
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE - 1; c++) {
+          if (grid[r][c] === grid[r][c+1] && grid[r][c] !== 0) return true;
+        }
+      }
+      for (let r = 0; r < SIZE - 1; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === grid[r+1][c] && grid[r][c] !== 0) return true;
+        }
+      }
+      return false;
+    }
+
+    // ---------- 检查胜利 (32768) ----------
+    function checkWin() {
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === TARGET) {
+            winFlag = true;
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    // ---------- 核心移动逻辑 (方向: 0上 1右 2下 3左) ----------
+    function move(direction) {
+      if (gameOver) return false;
+
+      // 保存当前状态用于撤回 (在移动前保存)
+      pushHistory();
+
+      let moved = false;
+      let workingGrid = grid.map(row => [...row]);
+
+      // 根据方向转换
+      if (direction === 0) { // 上 -> 左 (转置)
+        workingGrid = transpose(workingGrid);
+      } else if (direction === 1) { // 右 -> 左 (水平翻转)
+        workingGrid = workingGrid.map(row => [...row].reverse());
+      } else if (direction === 2) { // 下 -> 左 (转置 + 水平翻转)
+        workingGrid = transpose(workingGrid);
+        workingGrid = workingGrid.map(row => [...row].reverse());
+      }
+      // 方向3 (左) 无需转换
+
+      const result = slideLeft(workingGrid);
+      const newGrid = result.grid;
+      const gainedScore = result.score;
+
+      // 还原方向
+      let finalGrid = newGrid.map(row => [...row]);
+      if (direction === 0) { // 上
+        finalGrid = transpose(finalGrid);
+      } else if (direction === 1) { // 右
+        finalGrid = finalGrid.map(row => [...row].reverse());
+      } else if (direction === 2) { // 下
+        finalGrid = finalGrid.map(row => [...row].reverse());
+        finalGrid = transpose(finalGrid);
+      }
+
+      // 检测是否移动
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] !== finalGrid[r][c]) {
+            moved = true;
+            break;
+          }
+        }
+        if (moved) break;
+      }
+
+      if (!moved) {
+        // 未移动则弹出刚才保存的历史 (撤回栈)
+        history.pop();
+        updateUndoButton();
+        return false;
+      }
+
+      grid = finalGrid;
+      score += gainedScore;
+      updateScore();
+
+      // 检查胜利
+      if (checkWin()) {
+        gameOverMsg.innerHTML = `<span>🎉 达成 32768！继续挑战</span><button class="btn-sm" id="continueFromWinBtn">继续</button>`;
+        gameOverMsg.classList.add('show');
+        document.getElementById('continueFromWinBtn').addEventListener('click', function() {
+          gameOverMsg.classList.remove('show');
+          gameOverMsg.innerHTML = `<span>✨ 游戏结束！</span><button class="btn-sm" id="restartFromOverBtn">再来一局</button>`;
+          document.getElementById('restartFromOverBtn').addEventListener('click', restartGame);
+        });
+        newGameBtn.onclick = restartGame;
+      }
+
+      // 生成新方块
+      spawnTile();
+
+      // 检查游戏结束
+      if (!hasAvailableMoves()) {
+        gameOver = true;
+        gameOverMsg.innerHTML = `<span>😵 游戏结束！</span><button class="btn-sm" id="restartFromOverBtn">再来一局</button>`;
+        gameOverMsg.classList.add('show');
+        document.getElementById('restartFromOverBtn').addEventListener('click', restartGame);
+        newGameBtn.onclick = restartGame;
+      }
+
+      renderGrid();
+      updateUndoButton();
+      return true;
+    }
+
+    // ---------- 左滑操作 ----------
+    function slideLeft(mat) {
+      const newGrid = [];
+      let totalScore = 0;
+      for (let r = 0; r < SIZE; r++) {
+        let row = mat[r].filter(val => val !== 0);
+        let merged = [];
+        let i = 0;
+        while (i < row.length) {
+          if (i + 1 < row.length && row[i] === row[i+1]) {
+            const val = row[i] * 2;
+            merged.push(val);
+            totalScore += val;
+            i += 2;
+          } else {
+            merged.push(row[i]);
+            i++;
+          }
+        }
+        while (merged.length < SIZE) merged.push(0);
+        newGrid.push(merged);
+      }
+      return { grid: newGrid, score: totalScore };
+    }
+
+    // ---------- 工具: 矩阵转置 ----------
+    function transpose(mat) {
+      return mat[0].map((_, idx) => mat.map(row => row[idx]));
+    }
+
+    // ---------- 渲染网格 ----------
+    function renderGrid() {
+      gridContainer.innerHTML = '';
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          const value = grid[r][c];
+          if (value === 0) {
+            cell.classList.add('empty-cell');
+            cell.textContent = '';
+          } else {
+            cell.textContent = value;
+            cell.setAttribute('data-value', value);
+          }
+          gridContainer.appendChild(cell);
+        }
+      }
+    }
+
+    // ---------- 更新分数显示 ----------
+    function updateScore() {
+      scoreDisplay.textContent = score;
+    }
+
+    // ---------- 新游戏 / 重启 ----------
+    function restartGame() {
+      initGrid();
+      spawnTile();
+      spawnTile();
+      renderGrid();
+      gameOverMsg.classList.remove('show');
+      gameOverMsg.innerHTML = `<span>✨ 游戏结束！</span><button class="btn-sm" id="restartFromOverBtn">再来一局</button>`;
+      document.getElementById('restartFromOverBtn').addEventListener('click', restartGame);
+      newGameBtn.onclick = restartGame;
+      winFlag = false;
+      updateScore();
+      updateUndoButton();
+      history = [];
+    }
+
+    // ---------- 键盘事件 ----------
+    function handleKeydown(e) {
       const key = e.key;
-      let dir = -1;
-      if (key === 'ArrowLeft') dir = 0;
-      else if (key === 'ArrowRight') dir = 1;
-      else if (key === 'ArrowUp') dir = 2;
-      else if (key === 'ArrowDown') dir = 3;
+      // Ctrl+Z 撤回 (兼容 Mac 的 Meta+Z 不处理)
+      if ((e.ctrlKey || e.metaKey) && key === 'z') {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      let direction = -1;
+      if (key === 'ArrowUp') direction = 0;
+      else if (key === 'ArrowRight') direction = 1;
+      else if (key === 'ArrowDown') direction = 2;
+      else if (key === 'ArrowLeft') direction = 3;
       else return;
 
-      e.preventDefault(); // 防止滚动
-      if (dir !== -1) {
-        move(dir);
+      e.preventDefault();
+      if (direction !== -1) {
+        move(direction);
       }
     }
 
-    // ---------- 触摸支持 (简单滑动) ----------
+    // ---------- 触摸事件 ----------
     let touchStartX = 0, touchStartY = 0;
-    function onTouchStart(e) {
+    let isTouching = false;
+
+    function handleTouchStart(e) {
       const touch = e.touches[0];
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
+      isTouching = true;
     }
-    function onTouchEnd(e) {
-      if (touchStartX === 0 && touchStartY === 0) return;
-      const touchEnd = e.changedTouches[0];
-      const dx = touchEnd.clientX - touchStartX;
-      const dy = touchEnd.clientY - touchStartY;
-      const absDx = Math.abs(dx);
-      const absDy = Math.abs(dy);
-      if (Math.max(absDx, absDy) < 20) return; // 太短忽略
 
-      let dir = -1;
-      if (absDx > absDy) {
-        dir = dx > 0 ? 1 : 0; // 右:1 左:0
+    function handleTouchEnd(e) {
+      if (!isTouching) return;
+      isTouching = false;
+      let endX = 0, endY = 0;
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        endX = e.changedTouches[0].clientX;
+        endY = e.changedTouches[0].clientY;
       } else {
-        dir = dy > 0 ? 3 : 2; // 下:3 上:2
+        return;
       }
-      if (dir !== -1) {
-        move(dir);
+
+      const deltaX = endX - touchStartX;
+      const deltaY = endY - touchStartY;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      if (Math.max(absX, absY) < 20) return;
+
+      let direction = -1;
+      if (absX > absY) {
+        direction = deltaX > 0 ? 1 : 3;
+      } else {
+        direction = deltaY > 0 ? 2 : 0;
       }
-      touchStartX = 0;
-      touchStartY = 0;
+      move(direction);
     }
 
-    // ---------- 挂载事件 & 启动 ----------
-    window.addEventListener('keydown', onKeyDown);
+    function handleTouchMove(e) {
+      e.preventDefault();
+    }
 
-    // 触摸事件
-    gridEl.addEventListener('touchstart', onTouchStart, { passive: true });
-    gridEl.addEventListener('touchend', onTouchEnd, { passive: false });
+    // ---------- 初始化 ----------
+    function init() {
+      initGrid();
+      spawnTile();
+      spawnTile();
+      renderGrid();
+      updateScore();
+      updateUndoButton();
 
-    // 按钮
-    document.getElementById('newGameBtn').addEventListener('click', () => {
-      initGame();
-    });
-    document.getElementById('undoBtn').addEventListener('click', undoMove);
+      window.addEventListener('keydown', handleKeydown);
+      gridContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+      gridContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+      gridContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
 
-    // 开始!
-    initGame();
+      newGameBtn.addEventListener('click', restartGame);
+      restartFromOverBtn.addEventListener('click', restartGame);
 
-    // 阻止页面上下滑动 (针对触摸)
-    document.addEventListener('touchmove', (e) => {
-      if (e.target.closest('.game-container')) e.preventDefault();
-    }, { passive: false });
+      // 撤回按钮
+      undoBtn.addEventListener('click', undo);
+    }
 
+    init();
   })();
 </script>
 </body>
